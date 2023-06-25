@@ -114,6 +114,7 @@ def run(
     # Run inference
     model.warmup(imgsz=(1 if pt or model.triton else bs, 3, *imgsz))  # warmup
     seen, windows, dt = 0, [], (Profile(), Profile(), Profile())
+    first_image_saved = {}  # Dictionary to track if the first image has been saved for each class
     for path, im, im0s, vid_cap, s in dataset:
         with dt[0]:
             im = torch.from_numpy(im).to(model.device)
@@ -173,6 +174,10 @@ def run(
                         annotator.box_label(xyxy, label, color=colors(c, True))
                     if save_crop:
                         save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
+
+                    if save_img and cls not in first_image_saved:  # Save first image for each class
+                        first_image_saved[cls] = True
+                        cv2.imwrite(f"{save_dir}/{names[int(cls)]}.jpg", im0)
 
             # Stream results
             im0 = annotator.result()
